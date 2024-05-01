@@ -12,7 +12,7 @@
 
 // the active example is the one that will be compiled
 #if !defined(ACTIVE_EXAMPLE)
-#define ACTIVE_EXAMPLE  LCTT_EXAMPLE
+#define ACTIVE_EXAMPLE  PEER_TO_PEER_EXAMPLE
 #endif
 
 // the active channel plan is the one that will be compiled

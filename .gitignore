@@ -14,3 +14,7 @@ libmDot-*.lib
 *.lo
 *.o
 *.obj
+BUILD
+.mbed
+examples/lib/ISL29011
+libmdot
