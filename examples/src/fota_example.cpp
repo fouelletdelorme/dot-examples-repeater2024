@@ -188,11 +188,12 @@ int main() {
         static uint8_t consecutive_sends = max_consecutive_sends;
         static uint8_t payload_size_sent;
 
-        // Disable link check threshold during FOTA class C operation. Link checks are more likely to fail and a disconnect
-        // and rejoin will cause the FOTA session to fail. Make sure it is re-enabled when back to class A.
-        if (dot->getLinkCheckThreshold() != cfg::link_check_threshold && dot->getClass() == "A") {
+        // Disable link check threshold during FOTA. Link checks are more likely to fail and a disconnect
+        // and rejoin will cause the FOTA session to fail.
+        int32_t timeToStart = Fota::getInstance()->timeToStart();
+        if (dot->getLinkCheckThreshold() != cfg::link_check_threshold && timeToStart < 0) {
             dot->setLinkCheckThreshold(cfg::link_check_threshold);
-        } else if (dot->getClass() == "C" && dot->getLinkCheckThreshold() != 0) {
+        } else if (timeToStart >= 0 && dot->getLinkCheckThreshold() != 0) {
             dot->setLinkCheckThreshold(0);
         }
 
