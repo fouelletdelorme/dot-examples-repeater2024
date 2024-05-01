@@ -113,15 +113,36 @@ int main() {
         buffer[strlen(buffer)] = '\n';
         printf("new strlen = %d\r\n", strlen(buffer));
         serial_AT.write(buffer, strlen(buffer));
-        wait_us(1000000);
         printf("DONE SENDING TO AT\r\n\r\n");
+
+        wait_us(2000000);
+
+        // printf("READING FROM AT...\r\n");
+        // char received;
+        // serial_AT.read(&received, 1);
+        // // printf("got:\r\n");
+        // printf("<< %c\r\n", received);
+        // printf("DONE READING FROM AT\r\n\r\n");
 
         printf("READING FROM AT...\r\n");
         char received;
-        serial_AT.read(&received, 1);
-        // printf("got:\r\n");
-        printf("<< %c\r\n", received);
+        string receivedstring = "";
+        // printf("<< ");
+        while(serial_AT.readable())
+        {
+            serial_AT.read(&received, 1); // guaranteed to return because the port is readable
+            // printf("%c", received);
+            receivedstring += received;
+            if(received == '\r')
+            {
+                // printf("\n");
+                receivedstring += '\n';
+            }
+        }
+        // printf("\r\n");
+        printf("<< %s\r\n", receivedstring.c_str());
         printf("DONE READING FROM AT\r\n\r\n");
+
         // std::string response = ParseATResponse();
 
         logInfo("... sleeping for 2s ...");
