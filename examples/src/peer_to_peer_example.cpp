@@ -105,9 +105,6 @@ int main() {
         printf("sizeof = %d\r\n", sizeof(buffer));
         printf("DONE READING FROM PC\r\n\r\n");
 
-        // the Dot can't sleep in PEER_TO_PEER mode
-        // it must be waiting for data from the other Dot
-        // send data every 5 seconds
         printf("SENDING TO AT:\r\n>> %s\r\n", buffer);
         buffer[strlen(buffer)] = '\r';
         buffer[strlen(buffer)] = '\n';
@@ -115,36 +112,26 @@ int main() {
         serial_AT.write(buffer, strlen(buffer));
         printf("DONE SENDING TO AT\r\n\r\n");
 
-        wait_us(2000000);
-
-        // printf("READING FROM AT...\r\n");
-        // char received;
-        // serial_AT.read(&received, 1);
-        // // printf("got:\r\n");
-        // printf("<< %c\r\n", received);
-        // printf("DONE READING FROM AT\r\n\r\n");
+        wait_us(8000000);
 
         printf("READING FROM AT...\r\n");
         char received;
         string receivedstring = "";
-        // printf("<< ");
         while(serial_AT.readable())
         {
             serial_AT.read(&received, 1); // guaranteed to return because the port is readable
-            // printf("%c", received);
             receivedstring += received;
-            if(received == '\r')
-            {
-                // printf("\n");
-                receivedstring += '\n';
-            }
+            // if(received == '\r')
+            // {
+            //     receivedstring += '\n';
+            // }
         }
-        // printf("\r\n");
         printf("<< %s\r\n", receivedstring.c_str());
         printf("DONE READING FROM AT\r\n\r\n");
 
         // std::string response = ParseATResponse();
-
+    
+        // the Dot can't sleep in PEER_TO_PEER mode; it must be waiting for data from the other Dot
         logInfo("... sleeping for 2s ...");
         ThisThread::sleep_for(2s);
     }
