@@ -30,8 +30,6 @@ public:
             for (uint16_t i = 0; i < size; ++i) {
                 _data.push_back(payload[i]);
             }
-
-            printf("Downlink payload (port %d): %s\r\n", port, mts::Text::bin2hexString(_data.data(), _data.size()).c_str());
         }
 
         if(port == 200 || port == 201 || port == 202) {

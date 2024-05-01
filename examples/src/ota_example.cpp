@@ -68,11 +68,7 @@ int main() {
 #endif
 
         // configure network link checks
-        // network link checks are a good alternative to requiring the gateway to ACK every packet and should allow a single gateway to handle more Dots
-        // check the link every count packets
-        // declare the Dot disconnected after threshold failed link checks
-        // for count = 3 and threshold = 5, the Dot will ask for a link check response every 5 packets and will consider the connection lost if it fails to receive 3 responses in a row
-        update_network_link_check_config(3, 5);
+        update_network_link_check_config(cfg::link_check_count, cfg::link_check_threshold);
 
         // enable or disable Adaptive Data Rate
         dot->setAdr(cfg::adr);

@@ -57,7 +57,7 @@
 #define LCTT_EXAMPLE             8  // see lctt_example.cpp
 
 #if !defined(ACTIVE_EXAMPLE)
-#define ACTIVE_EXAMPLE OTA_EXAMPLE
+    #define ACTIVE_EXAMPLE OTA_EXAMPLE
 #endif
 
 namespace cfg {
@@ -70,29 +70,42 @@ namespace cfg {
 //     the network ID (8 bytes) and KEY (16 bytes)         //
 /////////////////////////////////////////////////////////////
 #if (ACTIVE_EXAMPLE == MANUAL_EXAMPLE || ACTIVE_EXAMPLE == PEER_TO_PEER_EXAMPLE)
-const uint8_t network_address[] = { 0x01, 0x02, 0x03, 0x04 };
-const uint8_t network_session_key[] = { 0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04 };
-const uint8_t data_session_key[] = { 0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04 };
+    const uint8_t network_address[] = { 0x01, 0x02, 0x03, 0x04 };
+    const uint8_t network_session_key[] = { 0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04 };
+    const uint8_t data_session_key[] = { 0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04 };
 #else // All other examples use the AppEUI and AppKey
-// Choose how to set the AppEUI and AppKey.
-#define DERIVE_FROM_TEXT
-#if defined(DERIVE_FROM_TEXT)
-// AppEUI
-const std::string network_name = "MultiTech";
-// AppKey
-const std::string network_passphrase = "MultiTech";
-#else // use hex keys instead of deriving from text
-// AppEUI
-const uint8_t network_id[] = { 0x6C, 0x4E, 0xEF, 0x66, 0xF4, 0x79, 0x86, 0xA6 };
-// AppKey
-const uint8_t network_key[] = { 0x1F, 0x33, 0xA1, 0x70, 0xA5, 0xF1, 0xFD, 0xA0, 0xAB, 0x69, 0x7A, 0xAE, 0x2B, 0x95, 0x91, 0x6B };
-#endif // defined(DERIVE_FROM_TEXT)
+    // Choose how to set the AppEUI and AppKey.
+    #define DERIVE_FROM_TEXT
+    #if defined(DERIVE_FROM_TEXT)
+        // AppEUI
+        const std::string network_name = "MultiTech";
+        // AppKey
+        const std::string network_passphrase = "MultiTech";
+    #else // use hex keys instead of deriving from text
+        // AppEUI
+        const uint8_t network_id[] = { 0x6C, 0x4E, 0xEF, 0x66, 0xF4, 0x79, 0x86, 0xA6 };
+        // AppKey
+        const uint8_t network_key[] = { 0x1F, 0x33, 0xA1, 0x70, 0xA5, 0xF1, 0xFD, 0xA0, 0xAB, 0x69, 0x7A, 0xAE, 0x2B, 0x95, 0x91, 0x6B };
+    #endif // defined(DERIVE_FROM_TEXT)
 #endif // (ACTIVE_EXAMPLE == MANUAL_EXAMPLE || ACTIVE_EXAMPLE == PEER_TO_PEER_EXAMPLE)
+
 const uint8_t frequency_sub_band = 1;
 const lora::NetworkType network_type = lora::PUBLIC_LORAWAN;
 const uint8_t join_delay = 5;
+
+/////////////////////////////////////////////////////////////
+// * The following settings affect netork connectivity.    //
+// * See the xDot AT command guide for a decription of     //
+//     the following AT commands:                          //
+//     +ADR                                                //
+//     +ACK                                                //
+//     +LCC                                                //
+//     +LCT                                                //
+/////////////////////////////////////////////////////////////
 const bool adr = true;
 const uint8_t ack = 0;
+const uint8_t link_check_count = 3;
+const uint8_t link_check_threshold = 5;
 
 //////////////////////////////////////////////////////////////
 // * Configure sleep mode settings.                         //
@@ -141,15 +154,15 @@ enum WakeMode {interval, interrupt, interval_or_interrupt};
 const uint8_t wake_mode = interrupt;
 
 #if defined(TARGET_MTS_MDOT_F411RE)
-enum WakePin {xbee_din=1, xbee_dio2, xbee_dio3, xbee_dio4, xbee_dio5, xbee_dio6, xbee_dio7, xbee_di8};
-// For deepsleep, the mdot wake pin must be xbee_dio7.
-const uint8_t wake_pin = xbee_dio7;
+    enum WakePin {xbee_din=1, xbee_dio2, xbee_dio3, xbee_dio4, xbee_dio5, xbee_dio6, xbee_dio7, xbee_di8};
+    // For deepsleep, the mdot wake pin must be xbee_dio7.
+    const uint8_t wake_pin = xbee_dio7;
 #elif defined(TARGET_XDOT_L151CC) || defined(TARGET_XDOT_MAX32670)
-enum WakePin {uart_rx=1, gpio0, gpio1, gpio2, gpio3, wake};
-// For deepsleep, the xDot_L151CC wake pin must be 6/WAKE.
-// Push button switch S2 on the xDot DK board connects to the wake pin.
-const uint8_t wake_pin = wake;
-#endif
+    enum WakePin {uart_rx=1, gpio0, gpio1, gpio2, gpio3, wake};
+    // For deepsleep, the xDot_L151CC wake pin must be 6/WAKE.
+    // Push button switch S2 on the xDot DK board connects to the wake pin.
+    const uint8_t wake_pin = wake;
+#endif // defined(TARGET_MTS_MDOT_F411RE)
 
 // The xDot DK board connects the wake pin to a push button switch S2. When
 //    pushed, the wake pin is connected to the power rail.
@@ -201,7 +214,7 @@ const uint8_t wake_pin_trigger = RISE;
 // This default is only used if the channel plan is not defined in
 //   mbed_app.json or on the command line during compilation.
 #if !defined(CHANNEL_PLAN)
-#define CHANNEL_PLAN CP_US915
+    #define CHANNEL_PLAN CP_US915
 #endif
 
-#endif
+#endif // __EXAMPLE__CONFIG_H__

@@ -32,7 +32,7 @@ void update_manual_config(const uint8_t *network_address, const uint8_t *network
 
 void update_peer_to_peer_config(const uint8_t *network_address, const uint8_t *network_session_key, const uint8_t *data_session_key, uint32_t tx_frequency, uint8_t tx_datarate, uint8_t tx_power);
 
-void update_network_link_check_config(uint8_t link_check_count, uint8_t link_check_threshold);
+void update_network_link_check_config(uint8_t lcc, uint8_t lct);
 
 void join_network();
 

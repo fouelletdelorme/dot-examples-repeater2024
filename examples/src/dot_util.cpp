@@ -346,21 +346,21 @@ void update_peer_to_peer_config(const uint8_t *network_address, const uint8_t *n
     }
 }
 
-void update_network_link_check_config(uint8_t link_check_count, uint8_t link_check_threshold) {
+void update_network_link_check_config(uint8_t lcc, uint8_t lct) {
     uint8_t current_link_check_count = dot->getLinkCheckCount();
     uint8_t current_link_check_threshold = dot->getLinkCheckThreshold();
 
-    if (current_link_check_count != link_check_count) {
-        logInfo("changing link check count from %u to %u", current_link_check_count, link_check_count);
-        if (dot->setLinkCheckCount(link_check_count) != mDot::MDOT_OK) {
-            logError("failed to set link check count to %u", link_check_count);
+    if (current_link_check_count != lcc) {
+        logInfo("changing link check count from %u to %u", current_link_check_count, lcc);
+        if (dot->setLinkCheckCount(lcc) != mDot::MDOT_OK) {
+            logError("failed to set link check count to %u", lcc);
         }
     }
 
-    if (current_link_check_threshold != link_check_threshold) {
-        logInfo("changing link check threshold from %u to %u", current_link_check_threshold, link_check_threshold);
-        if (dot->setLinkCheckThreshold(link_check_threshold) != mDot::MDOT_OK) {
-            logError("failed to set link check threshold to %u", link_check_threshold);
+    if (current_link_check_threshold != lct) {
+        logInfo("changing link check threshold from %u to %u", current_link_check_threshold, lct);
+        if (dot->setLinkCheckThreshold(lct) != mDot::MDOT_OK) {
+            logError("failed to set link check threshold to %u", lct);
         }
     }
 }

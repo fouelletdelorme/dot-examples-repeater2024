@@ -28,9 +28,9 @@
 
 
 ////////////////////////////////////////////////////////////////////////////
-// -------------------------- XDOT EXTERNAL STORAGE --------------------- //
-// An external storage device is required for FOTA on an XDot.  The       //
-// storage device must meet the following criteria:                       //
+// ------------------- Legacy XDOT EXTERNAL STORAGE --------------------- //
+// An external storage device is required for FOTA on a legacy XDot.      //
+// The storage device must meet the following criteria:                   //
 // * Work with MBed OS DataFlashBlockDevice or SPIFBlockDevice classes    //
 // * Maximum 4KB sector erase size                                        //
 // * Maximum 512 byte page size                                           //
@@ -84,7 +84,7 @@ mbed::BlockDevice * mdot_override_external_block_device()
 *
 * @param sleep_interval is the requested sleep interval.
 */
-void get_fota_sleep_interval(uint32_t &sleep_interval) {
+uint32_t get_fota_sleep_interval(uint32_t sleep_interval) {
     if (Fota::getInstance()->ready()) {
         printf("fota time to start = %us\r\n", Fota::getInstance()->timeToStart());
         if (sleep_interval > Fota::getInstance()->timeToStart()) {
@@ -96,6 +96,7 @@ void get_fota_sleep_interval(uint32_t &sleep_interval) {
     } else if (!Fota::getInstance()->idle() && !Fota::getInstance()->ready()) {
         sleep_interval = 0;
     }
+    return sleep_interval;
 }
 
 int main() {
@@ -154,11 +155,7 @@ int main() {
 #endif
 
         // configure network link checks
-        // network link checks are a good alternative to requiring the gateway to ACK every packet and should allow a single gateway to handle more Dots
-        // check the link every count packets
-        // declare the Dot disconnected after threshold failed link checks
-        // for count = 3 and threshold = 5, the Dot will ask for a link check response every 5 packets and will consider the connection lost if it fails to receive 3 responses in a row
-        update_network_link_check_config(3, 5);
+        update_network_link_check_config(cfg::link_check_count, cfg::link_check_threshold);
         
         // enable or disable Adaptive Data Rate
         dot->setAdr(cfg::adr);
@@ -186,10 +183,18 @@ int main() {
     }
 
     while (true) {
+        // Defensive programming in case the gateway/network server continuously gives a reason to send.
+        static const uint8_t max_consecutive_sends = 4;
+        static uint8_t consecutive_sends = max_consecutive_sends;
         static uint8_t payload_size_sent;
-        // The Dot starts out in class A and can only receive a FOTA session request on an uplink. Make sure this
-        // interval is short enough to provide at least three opportunities for downlinks.
-        static uint32_t sleep_interval_s = 10;
+
+        // Disable link check threshold during FOTA class C operation. Link checks are more likely to fail and a disconnect
+        // and rejoin will cause the FOTA session to fail. Make sure it is re-enabled when back to class A.
+        if (dot->getLinkCheckThreshold() != cfg::link_check_threshold && dot->getClass() == "A") {
+            dot->setLinkCheckThreshold(cfg::link_check_threshold);
+        } else if (dot->getClass() == "C" && dot->getLinkCheckThreshold() != 0) {
+            dot->setLinkCheckThreshold(0);
+        }
 
         // Join network if join status indicates not joined. If link check threshold is not enabled, another method
         // should be used to ensure connectivity and trigger joins. This could be based on not seeing a downlink for 
@@ -199,29 +204,50 @@ int main() {
         }
 
         // If the channel plan has duty cycle restrictions, wait may be required.
-        thread_wait_for_channel();
-        
-        // Don't perform any extra sends during fota.
-        send(payload_size_sent);
-        // Since downlinks can come at anytime in class C mode, handle them in RadioEvents.h.
+        dot_wait_for_channel();
 
-        if (!dot->getNetworkJoinStatus()) {
-            // skip any sleep and join.
-        } else {
-            get_fota_sleep_interval(sleep_interval_s);
-            if (sleep_interval_s) {
-                // Dot can sleep at this time as FOTA is not active.
-                sleep_wake_rtc_only(sleep_interval_s, true);
-            } else {
-                // FOTA is occurring. Only use thread sleep. Must be able to receive FOTA packets at any time. Limit
-                // uplink frequency as too many will cause excessive missed FOTA packets.
-                ThisThread::sleep_for(300s);
+        if(send(payload_size_sent) == mDot::MDOT_OK) {
+            // In class A mode, downlinks only occur following an uplink. So process downlinks after a successful send.
+            if (events.PacketReceived && (events.RxPort == (dot->getAppPort()))) {
+                std::vector<uint8_t> rx_data;
+                if (dot->recv(rx_data) == mDot::MDOT_OK) {
+                    logInfo("Downlink data (port %d) %s", dot->getAppPort(),mts::Text::bin2hexString(rx_data.data(), rx_data.size()).c_str());
+                }
             }
+
+            // Print information updated on send/rcv.
+            if(dot->getDataPending())
+                logInfo("Data pending");
+            if(dot->hasMacCommands())
+                logInfo("Respond with MAC answers");
+            if(dot->getAckRequested())
+                logInfo("Ack has been requested");
+            if(payload_size_sent == 0)
+                logInfo("Sent an empty payload to clear MAC commands");
+            if(consecutive_sends <= 1)
+                logInfo("Reached consecutive send limit of %d without sleeping", max_consecutive_sends);
+            
+            // Optional reasons to send again right away.
+            // 1. Data pending. There are downlinks queued up for this endpoint. This reason is cleared on send and updated on reception
+            //    of a downlink. So, a missed downlink results in no data pending.
+            // 2. There are MAC command answers pending.
+            // 3. An Ack has been requested of this endpoint.
+            // 4. Sent an empty payload to clear MAC commands. dot->hasMacCommands is not true now but that's because an 
+            //    empty packet was sent making room for the actual payload to be sent.
+            if (dot->getClass() == "A" && consecutive_sends > 1 &&
+                (dot->getDataPending() || dot->hasMacCommands() || dot->getAckRequested() || payload_size_sent == 0)) {
+                logInfo("Don't sleep... send again.");
+                consecutive_sends--;
+            } else {
+                consecutive_sends = max_consecutive_sends;
+                dot_sleep();
+            }
+        } else { // Send failed. Don't drain battery by repeatedly sending.
+            dot_sleep();
         }
     }
-
+    
     return 0;
 }
 
 #endif
-
